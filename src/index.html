@@ -61,3 +61,30 @@
           if (!best || Math.abs(n.time - t) < Math.abs(best.time - t)) best = n;
         }
       }
+       
+         onkeydown = (e) => {
+      if (e.repeat) return;
+      const lane = KEYS.indexOf(e.key.toLowerCase());
+      if (lane >= 0 || !started) hit(Math.max(lane, 0));
+    };
+    onpointerdown = (e) => {
+      hit(Math.floor((e.clientX - laneLeft()) / laneWidth()));
+    };
+
+    function update(t) {
+      while (nextBeat * 2 * STEP <= t) {
+        beep(nextBeat % 4 ? 90 : 60, 0.1, 0.4);
+        nextBeat++;
+      }
+      for (const n of notes) {
+        if (n.state == 0 && t - n.time > GOOD) {
+          n.state = 2;
+          combo = 0;
+          message = "MISS";
+        }
+      }
+    }
+
+
+
+  
