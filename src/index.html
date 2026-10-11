@@ -1,10 +1,55 @@
 <body>
-  <h1>it works!</h1>
-  <style>
-    body { background: black; color: white; font-family: sans-serif; }
+  <canvas id=""c"></canvas>
+  <style> 
+     body { margin: 0; overflow: hidden; background: #111; touch-action: none; }
   </style>
-  <script>
-    const title = document.querySelector("h1");
-    title.onclick = () => (title.textContent = "you clicked it");
-  </script>
+
+  <script>    
+    const ctx = c.getContext("2d");
+    const KEYS = "dfjk";   
+    const COLORS = ["#f55", "#fa3", "#5d5", "#58f"];
+    const BPM = 120;
+  const STEP = 60 / BPM / 2;           
+    const FALL_TIME = 1.5;               
+    const PERFECT = 0.05, GOOD = 0.15;   
+    const PATTERN = "0.1.2.3.0.1.23..3.2.1.0.0.12.3.0.1.2.3.03.1.2.1.0.";
+
+    let audio, songStart, nextBeat, endTime;
+    let notes = [], score = 0, combo = 0, message = ""; 
+    let started = false;
+
+    function reset() {
+      notes = [];
+
+      for (let i = 0; i < PATTERN.length * 3; i++) {
+        const ch = PATTERN[i % PATTERN.length];
+        if (ch != ".") notes.push({ lane: +ch, time: 2 + i * STEP, state: 0 }); 
+      }
+      endTime = 2 + PATTERN.length * 3 * STEP + 1;
+      score = combo = nextBeat = 0;
+      message = "";
+      songStart = performance.now() / 1000;
+      started = true;
+    }
+
+    const laneWidth = () => Math.min(c.width / 4, 100);
+    const laneLeft = () => (c.width - laneWidth() * 4) / 2;
+    const hitY = () => c.height * 0.85;
+
+    function beep(freq, length, volume) {
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(volume, audio.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + length);
+      osc.connect(gain);
+      gain.connect(audio.destination);
+      osc.start();
+      osc.stop(audio.currentTime + length);
+    }
+
+
+</script>
+
+</canvas><"
 </body>
