@@ -84,6 +84,36 @@
         }
       }
     }
+   function draw(t) {
+      ctx.fillStyle = "#111";
+      ctx.fillRect(0, 0, c.width, c.height);
+      const w = laneWidth(), left = laneLeft(), y = hitY();
+
+      ctx.font = "20px monospace";
+      ctx.textAlign = "center";
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = i % 2 ? "#181818" : "#1e1e1e";
+        ctx.fillRect(left + i * w, 0, w, c.height);
+        ctx.fillStyle = COLORS[i];
+        ctx.fillRect(left + i * w + 4, y, w - 8, 4);
+        ctx.fillText(KEYS[i].toUpperCase(), left + i * w + w / 2, y + 30);
+      }
+
+      for (const n of notes) {
+        if (n.state) continue;
+        const ny = y * (1 - (n.time - t) / FALL_TIME);
+        if (ny < -20 || ny > c.height) continue;
+        ctx.fillStyle = COLORS[n.lane];
+        ctx.fillRect(left + n.lane * w + 8, ny - 10, w - 16, 20);
+      }
+
+      ctx.fillStyle = "white";
+      ctx.fillText("Score " + score, c.width / 2, 30);
+      if (combo > 1) ctx.fillText(combo + " combo", c.width / 2, 60);
+      ctx.fillText(message, c.width / 2, y - 40);
+      if (!started) ctx.fillText("Press D F J K or tap lanes to start", c.width / 2, c.height / 2);
+      if (started && t > endTime) ctx.fillText("Done! Tap to play again", c.width / 2, c.height / 2);
+    }
 
 
 
