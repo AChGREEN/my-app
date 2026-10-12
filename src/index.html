@@ -1,29 +1,28 @@
 <body>
-  <canvas id=""c"></canvas>
-  <style> 
-     body { margin: 0; overflow: hidden; background: #111; touch-action: none; }
+  <style>
+    body { margin: 0; overflow: hidden; background: #111; touch-action: none; }
   </style>
 
-  <script>    
+  <script>
+    const c = document.getElementById("c");
     const ctx = c.getContext("2d");
-    const KEYS = "dfjk";   
+    const KEYS = "dfjk";
     const COLORS = ["#f55", "#fa3", "#5d5", "#58f"];
     const BPM = 120;
-  const STEP = 60 / BPM / 2;           
-    const FALL_TIME = 1.5;               
-    const PERFECT = 0.05, GOOD = 0.15;   
+    const STEP = 60 / BPM / 2;
+    const FALL_TIME = 1.5;
+    const PERFECT = 0.05, GOOD = 0.15;
     const PATTERN = "0.1.2.3.0.1.23..3.2.1.0.0.12.3.0.1.2.3.03.1.2.1.0.";
-
     let audio, songStart, nextBeat, endTime;
-    let notes = [], score = 0, combo = 0, message = ""; 
+    let notes = [], score = 0, combo = 0, message = "";
     let started = false;
 
     function reset() {
+      audio = audio || new AudioContext();
       notes = [];
-
       for (let i = 0; i < PATTERN.length * 3; i++) {
         const ch = PATTERN[i % PATTERN.length];
-        if (ch != ".") notes.push({ lane: +ch, time: 2 + i * STEP, state: 0 }); 
+        if (ch != ".") notes.push({ lane: +ch, time: 2 + i * STEP, state: 0 });
       }
       endTime = 2 + PATTERN.length * 3 * STEP + 1;
       score = combo = nextBeat = 0;
@@ -37,6 +36,7 @@
     const hitY = () => c.height * 0.85;
 
     function beep(freq, length, volume) {
+      if (!audio) return;
       const osc = audio.createOscillator();
       const gain = audio.createGain();
       osc.frequency.value = freq;
@@ -47,9 +47,10 @@
       osc.start();
       osc.stop(audio.currentTime + length);
     }
-  function hit(lane) {
+
+    function hit(lane) {
       if (!started || performance.now() / 1000 - songStart > endTime) {
-        audio = audio || new AudioContext(); 
+        audio = audio || new AudioContext();
         reset();
         return;
       }
@@ -61,15 +62,20 @@
           if (!best || Math.abs(n.time - t) < Math.abs(best.time - t)) best = n;
         }
       }
-       
-         onkeydown = (e) => {
-      if (e.repeat) return;
-      const lane = KEYS.indexOf(e.key.toLowerCase());
-      if (lane >= 0 || !started) hit(Math.max(lane, 0));
-    };
-    onpointerdown = (e) => {
-      hit(Math.floor((e.clientX - laneLeft()) / laneWidth()));
-    };
+
+      if (!best) return;
+
+      const delta = Math.abs(best.time - t);
+      best.state = 1;
+      combo++;
+      if (delta < PERFECT) {
+        score += 1000 + combo * 10;
+        message = "PERFECT";
+      } else {
+        score += 500 + combo * 5;
+        message = "GOOD";
+      }
+    }
 
     function update(t) {
       while (nextBeat * 2 * STEP <= t) {
@@ -84,7 +90,8 @@
         }
       }
     }
-   function draw(t) {
+
+    function draw(t) {
       ctx.fillStyle = "#111";
       ctx.fillRect(0, 0, c.width, c.height);
       const w = laneWidth(), left = laneLeft(), y = hitY();
@@ -112,9 +119,43 @@
       if (combo > 1) ctx.fillText(combo + " combo", c.width / 2, 60);
       ctx.fillText(message, c.width / 2, y - 40);
       if (!started) ctx.fillText("Press D F J K or tap lanes to start", c.width / 2, c.height / 2);
-      if (started && t > endTime) ctx.fillText("Done! Tap to play again", c.width / 2, c.height / 2);
+      if (started && t > endTime) ctx.fillText("Tap to play again", c.width / 2, c.height / 2);
     }
 
+    onkeydown = (e) => {
+      if (e.repeat) return;
+      const lane = KEYS.indexOf(e.key.toLowerCase());
+      if (lane >= 0) hit(lane);
+      else if (!started) {
+        audio = audio || new AudioContext();
+        reset();
+      }
+    };
+
+    onpointerdown = (e) => {
+      if (!started) {
+        audio = audio || new AudioContext();
+        reset();
+        return;
+      }
+      const lane = Math.min(3, Math.max(0, Math.floor((e.clientX - laneLeft()) / laneWidth())));
+      hit(lane);
+    };
+
+    onresize = () => {
+      c.width = innerWidth;
+      c.height = innerHeight;
+    };
+    onresize();
+    function frame(now) {
+      const t = started ? now / 1000 - songStart : -1;
+      if (started && t < endTime) update(t);
+      draw(t);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
 
 
-  
+
